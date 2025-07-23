@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salt Creative Content Generator - Live AI Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5dc; /* Beige */
+        }
+        .montserrat {
+            font-family: 'Montserrat', sans-serif;
+            letter-spacing: -0.02em;
+        }
+        /* Custom brand colors */
+        .bg-brand-blue { background-color: #345a7c; }
+        .text-brand-blue { color: #345a7c; }
+        .border-brand-blue { border-color: #345a7c; }
+        .bg-brand-beige { background-color: #f5f5dc; }
+        .text-brand-beige { color: #f5f5dc; }
+        .btn {
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .feedback-btn.selected-good {
+            background-color: #22c55e;
+            border-color: #16a34a;
+            color: white;
+        }
+        .feedback-btn.selected-bad {
+            background-color: #ef4444;
+            border-color: #dc2626;
+            color: white;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #345a7c;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 90%;
+            width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        /* Calendar Styles */
+        .calendar-day.has-item {
+            background-color: #e0f2fe; /* light blue */
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .calendar-day.has-item:hover {
+            background-color: #bae6fd; /* lighter blue */
+        }
+        .calendar-day.selected {
+            background-color: #345a7c;
+            color: white;
+            border: 2px solid #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-brand-beige text-gray-800">
+
+    <div id="app-container" class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <div id="api-key-warning" class="hidden bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
+          <p class="font-bold">Configuration Needed</p>
+          <p>To enable live AI content generation, please add your free Google AI API key to the `apiKey` variable in the script. You can get a key from <a href="https://aistudio.google.com/" target="_blank" class="underline font-semibold">Google AI Studio</a>.</p>
+        </div>
+
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold montserrat text-brand-blue">Salt Creative</h1>
+            <p class="text-xl montserrat text-gray-600">Content Campaign Generator</p>
+        </header>
+
+        <main class="space-y-8">
+
+            <!-- Step 1: Input -->
+            <section class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold montserrat text-brand-blue mb-4">Step 1: Add Your Hook(s)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="hook-input" class="block text-sm font-medium text-gray-700 mb-1">Enter a single hook:</label>
+                        <textarea id="hook-input" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-blue focus:border-brand-blue" placeholder="e.g., Your message is timeless. Your graphics shouldn’t look dated."></textarea>
+                        <button id="generate-single-btn" class="btn mt-2 w-full bg-brand-blue text-white py-2 px-4 rounded-md font-semibold montserrat hover:bg-opacity-90">Generate Insights</button>
+                    </div>
+                    <div>
+                        <label for="csv-upload" class="flex flex-col items-center justify-center h-full bg-gray-50 p-6 rounded-md border-2 border-dashed border-gray-300 cursor-pointer hover:border-brand-blue hover:bg-gray-100 transition-colors">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                            <span class="mt-2 block text-sm font-medium text-gray-900">Upload a CSV</span>
+                            <span class="block text-xs text-gray-500">(Single column of hooks, no header)</span>
+                        </label>
+                        <input type="file" id="csv-upload" class="hidden" accept=".csv">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Generate & Review -->
+            <section class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold montserrat text-brand-blue mb-4">Step 2: Review & Approve</h2>
+                <div id="loader" class="hidden justify-center items-center py-8">
+                    <div class="loader"></div>
+                    <p id="loader-text" class="ml-4 text-gray-600">Generating insights with the Salt Creative voice...</p>
+                </div>
+                <div id="results-container" class="space-y-6">
+                    <p class="text-center text-gray-500 italic">Your generated content will appear here.</p>
+                </div>
+            </section>
+
+            <!-- Step 3: Calendar & Campaign Planning -->
+            <section class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold montserrat text-brand-blue mb-4">Step 3: Plan Your Campaign</h2>
+                <div id="calendar-container"></div>
+                <div class="mt-4 text-center">
+                    <button id="generate-newsletter-btn" class="btn bg-brand-blue text-white py-2 px-6 rounded-md font-semibold montserrat hover:bg-opacity-90 disabled:bg-gray-400" disabled>Generate Newsletter from Selected</button>
+                </div>
+            </section>
+            
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>&copy; 2025 Salt Creative. This tool learns and improves with your feedback.</p>
+        </footer>
+    </div>
+
+    <!-- Modal for Calendar Items, Captions, Blog Posts, etc. -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div id="modal-content" class="modal-content">
+            <!-- Modal content goes here -->
+        </div>
+    </div>
+
+    <script type="module">
+        // --- DATA & STATE MANAGEMENT ---
+        
+        // ===================================================================================
+        // IMPORTANT: PASTE YOUR GOOGLE AI API KEY HERE
+        // You can get a free key from Google AI Studio: https://aistudio.google.com/
+        // ===================================================================================
+        const apiKey = "AIzaSyDthX8ysAgHwXdf92WL4gKpmRf7or1D35M"; 
+        // ===================================================================================
+
+        let trainingData = [];
+        let generatedContent = []; 
+        let scheduledContent = {}; // { 'YYYY-MM-DD': [contentItem] }
+        let selectedCalendarDays = new Set();
+
+        const initialTrainingData = [
+            { hook: "The expectation to be a theologian, CEO, and creative director is unrealistic.", headline: "The Integrated Pastor, Not the Divided One", insight1: "Imagine your theological research flowing seamlessly into a sermon outline, which then generates your slide graphics—all in one place.", insight2: "God is a God of order, not chaos. A unified workflow brings that divine order to your preparation, freeing you from the chaos of juggling multiple roles so you can minister from a place of peace.", scripture: "1 Corinthians 14:33", scriptureText: "For God is not a God of disorder but of peace." },
+            { hook: "Your message is timeless. Your graphics shouldn’t look dated.", headline: "Designing for Endurance: Visuals That Last", insight1: "A clean, up‑to‑date slide deck keeps eyes on your sermon, not on pixelated clip art.", insight2: "Just as God’s Word never fades, your visuals should reinforce that permanence rather than distract from it.", scripture: "Isaiah 40:8", scriptureText: "The grass withers, the flower fades, but the word of our God will stand forever." },
+            { hook: "Connecting with the next generation means speaking their visual language.", headline: "Bridge the Generational Divide Through Design", insight1: "Young adults scroll past dense text—use vibrant imagery, bite‑size carousels, and clear calls to action.", insight2: "Paul became “all things to all people” to win them for Christ; we adapt our formats today to reach tomorrow’s leaders.", scripture: "1 Corinthians 9:19", scriptureText: "Though I am free and belong to no one, I have made myself a slave to everyone, to win as many as possible." }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const apiKeyWarning = document.getElementById('api-key-warning');
+        const hookInput = document.getElementById('hook-input');
+        const generateSingleBtn = document.getElementById('generate-single-btn');
+        const csvUpload = document.getElementById('csv-upload');
+        const resultsContainer = document.getElementById('results-container');
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalContent = document.getElementById('modal-content');
+        const calendarContainer = document.getElementById('calendar-container');
+        const generateNewsletterBtn = document.getElementById('generate-newsletter-btn');
+
+        // --- LIVE AI FUNCTIONS ---
+        async function generateInsightsForHook(hook) {
+            if (!apiKey || apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
+                return { success: false, error: "API Key is missing. Please add your key to the script to enable live AI generation." };
+            }
+            
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            
+            let prompt = `You are an expert content strategist and theologian for Salt Creative, a brand that equips pastors by offering a streamlined platform for sermon prep, research, graphics, and outreach. Your primary goal is to generate content that resonates with pastors' real-world pain points and subtly points them toward the holistic solution Salt Creative provides. You will be given a "hook." Your task is to generate 3 distinct, high-quality "deep dive" insights that follow a strict five-part structure.
+
+**THE STRUCTURE (MANDATORY FOR ALL 3 INSIGHTS):**
+1.  **headline:** An aspirational, solution-oriented title.
+2.  **insight1 (The "What"):** A highly practical tip that hints at a streamlined workflow (e.g., research flowing into outlines, outlines generating graphics). This MUST be a tangible action a pastor can imagine taking.
+3.  **insight2 (The "Why"):** A robust theological bridge. This connects the practical tip in Insight 1 to a larger biblical principle, a character quality of God, or a scriptural narrative. It explains *why* the practical action matters spiritually.
+4.  **scripture:** A relevant Bible reference (e.g., "1 Corinthians 14:33") that grounds the entire thought.
+5.  **scriptureText:** The full, written-out text of the scripture reference.
+
+**THE GOLDEN STANDARD (Follow this pattern precisely):**
+[EXAMPLE 1]
+Hook: "The expectation to be a theologian, CEO, and creative director is unrealistic."
+Output: { "headline": "The Integrated Pastor, Not the Divided One", "insight1": "Imagine your theological research flowing seamlessly into a sermon outline, which then generates your slide graphics—all in one place.", "insight2": "God is a God of order, not chaos. A unified workflow brings that divine order to your preparation, freeing you from the chaos of juggling multiple roles so you can minister from a place of peace.", "scripture": "1 Corinthians 14:33", "scriptureText": "For God is not a God of disorder but of peace." }
+
+[TASK]
+Now, generate 3 distinct JSON objects for this new hook. Strictly follow the structure and tone of the examples provided. Ensure every field is filled out correctly for all three objects.
+Hook: "${hook}"`;
+            
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        description: "A list of 3 generated deep-dive insights.",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                headline: { type: "STRING" },
+                                insight1: { type: "STRING" },
+                                insight2: { type: "STRING" },
+                                scripture: { type: "STRING" },
+                                scriptureText: { type: "STRING" }
+                            },
+                            required: ["headline", "insight1", "insight2", "scripture", "scriptureText"]
+                        }
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) throw new Error(`API call failed with status: ${response.status}. Check your API key and permissions.`);
+                const result = await response.json();
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                    const variations = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const validVariations = variations.filter(v => v.headline && v.insight1 && v.insight2 && v.scripture && v.scriptureText && v.scripture.includes(':'));
+                    if (validVariations.length === 0) throw new Error("AI failed to generate valid insights that passed quality checks.");
+                    return { success: true, data: validVariations };
+                } else {
+                    let errorMessage = "Invalid response structure from API.";
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                        errorMessage = `Content generation blocked: ${result.promptFeedback.blockReason}. Please rephrase the hook.`;
+                    }
+                    throw new Error(errorMessage);
+                }
+            } catch (error) {
+                console.error(`Error for hook "${hook}":`, error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function generateCaptions(item) {
+            const insight = item.variations[item.approvedVariation];
+            return `
+                <h4 class="text-lg font-bold montserrat text-brand-blue mb-3">Social Media Captions</h4>
+                <div class="space-y-4 text-sm">
+                    <div>
+                        <h5 class="font-bold text-gray-700">Instagram</h5>
+                        <p class="bg-gray-100 p-3 rounded-md mt-1">Visual first: ${item.hook} ➔ Swipe to see why this matters. ${insight.insight1} Grounded in ${insight.scripture}. What are your thoughts? 👇 #PastoralMinistry #ChurchComm #SermonPrep</p>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-gray-700">Facebook</h5>
+                        <p class="bg-gray-100 p-3 rounded-md mt-1">A question for fellow ministry leaders: We all feel the tension of "${item.hook.toLowerCase()}". It's easy to get bogged down. But what if we saw it as an act of stewardship? "${insight.scriptureText}" (${insight.scripture}). How do you balance timeless truth with timely methods? Let's discuss in the comments!</p>
+                    </div>
+                    <div>
+                        <h5 class="font-bold text-gray-700">LinkedIn</h5>
+                        <p class="bg-gray-100 p-3 rounded-md mt-1">Leadership Insight: The principle of "${item.hook}" extends beyond the pulpit. In any organization, clear and current communication builds trust and signals relevance. By streamlining creative workflows, leaders can reinvest their time into what matters most: shepherding their people. #ChurchLeadership #NonprofitManagement #Stewardship</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function generateBlogPost(item) {
+            const insight = item.variations[item.approvedVariation];
+            return `
+                <h4 class="text-lg font-bold montserrat text-brand-blue mb-3">Generated Blog Post</h4>
+                <div class="space-y-4 text-sm prose max-w-none border bg-gray-50 p-4 rounded-md">
+                    <h1 class="text-2xl !mb-2">${insight.headline}: A Guide for Modern Pastors</h1>
+                    <p>In the fast-paced world of modern ministry, pastors often feel a constant tension: how do we honor a timeless message while using timely methods? The feeling that "${item.hook}" is a common one, but it doesn't have to lead to burnout. In fact, addressing this tension is an act of biblical stewardship.</p>
+                    <h2 class="!mt-4 !mb-2">Why Your Methods Matter</h2>
+                    <p>${insight.insight1} This isn't about chasing trends; it's about removing unnecessary obstacles that prevent people from hearing the Gospel. When our communication is clear and professional, it builds subconscious trust with our congregation and visitors.</p>
+                    <h2 class="!mt-4 !mb-2">The Theological Foundation: "${insight.scriptureText}"</h2>
+                    <p>${insight.insight2} The Bible calls us to be good stewards of the resources God has given us—and our time and energy are chief among them. As it says in ${insight.scripture}, we are to approach our work with wisdom and excellence.</p>
+                    <h2 class="!mt-4 !mb-2">Practical Steps to Streamline Your Workflow</h2>
+                    <p>1. **Embrace Templates:** You don't need to reinvent the wheel for every graphic or announcement. <br>2. **Integrate Your Tools:** Find a system where your research, outlining, and creative work can happen in one place. <br>3. **Delegate or Automate:** Empower volunteers or use tools to handle routine tasks.</p>
+                    <p>By making these small changes, you can reclaim hours for the soul-work of ministry: prayer, study, and pastoral care. Ready to trade burnout for breakthrough? Salt Creative is here to help.</p>
+                </div>
+            `;
+        }
+        
+        async function generateNewsletter(items) {
+            let body = '';
+            items.forEach(item => {
+                const insight = item.variations[item.approvedVariation];
+                body += `<h3 class="text-lg font-bold montserrat text-brand-blue mt-4">${insight.headline}</h3><p class="mt-1">${insight.insight1} This is rooted in the biblical truth that ${insight.insight2} ("${insight.scriptureText}" - ${insight.scripture}).</p>`;
+            });
+            return `<h2 class="text-xl font-bold montserrat text-brand-blue mb-4">Pass the Salt Ministry Newsletter</h2><div class="space-y-4 text-sm prose max-w-none"><p>Hello Pastors,</p><p>This week, we're reflecting on a few key areas where modern ministry meets timeless truth. It's our prayer that these insights will encourage you and equip you for the week ahead.</p>${body}<hr class="my-4"><p>All these ideas—from research to graphics to outreach—can be streamlined with Salt Creative. Spend less time on busy work and more time shepherding your flock. We're here to help.</p><p>In His Service,<br>The Salt Creative Team</p></div>`;
+        }
+
+        // --- RENDER & UI FUNCTIONS ---
+        function renderResults() {
+            resultsContainer.innerHTML = '';
+            if (generatedContent.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center text-gray-500 italic">Your generated content will appear here.</p>';
+                return;
+            }
+            generatedContent.forEach((item, itemIndex) => {
+                const hookCard = document.createElement('div');
+                hookCard.className = 'border border-gray-200 rounded-lg p-4 bg-white';
+                
+                let contentHtml = `<h3 class="font-bold text-lg text-brand-blue montserrat">${item.hook}</h3>`;
+                
+                if (item.error) {
+                    contentHtml += `<div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                                        <p class="text-red-700 font-semibold">Could not generate insights</p>
+                                        <p class="text-red-600 text-sm">${item.error}</p>
+                                    </div>`;
+                } else {
+                    contentHtml += `<div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${item.variations.map((v, varIndex) => {
+                        const isGood = item.approvedVariation === varIndex && item.rating === 'good';
+                        const isScheduled = item.isScheduled;
+                        return `<div class="border rounded-lg p-4 ${isGood ? 'bg-green-50 border-green-300' : 'bg-gray-50'} flex flex-col justify-between">
+                                    <div>
+                                        <h4 class="font-semibold text-brand-blue">${v.headline}</h4>
+                                        <p class="text-sm mt-2">${v.insight1}</p>
+                                        <p class="text-sm mt-2 font-medium text-gray-800">${v.insight2}</p>
+                                        <div class="mt-3 pt-3 border-t border-dashed">
+                                            <p class="text-sm italic text-gray-700">"${v.scriptureText}"</p>
+                                            <p class="text-sm mt-1 text-right font-semibold text-gray-600 montserrat">— ${v.scripture}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow"></div>
+                                    <div class="mt-4">
+                                        ${isGood ? `<div class="mt-3 pt-3 border-t border-dashed space-y-2"><button data-action="calendar" data-item-index="${itemIndex}" class="action-btn btn text-sm w-full bg-teal-600 text-white py-2 px-2 rounded" ${isScheduled ? 'disabled' : ''}>${isScheduled ? '✔ Scheduled' : 'Add to Calendar'}</button></div>` : `<div class="flex justify-end space-x-2"><button data-item-index="${itemIndex}" data-var-index="${varIndex}" class="feedback-btn bad-btn p-2 rounded-full hover:bg-red-200">👎</button><button data-item-index="${itemIndex}" data-var-index="${varIndex}" class="feedback-btn good-btn p-2 rounded-full hover:bg-green-200">👍</button></div>`}
+                                    </div>
+                                </div>`;
+                    }).join('')}</div>`;
+                }
+                hookCard.innerHTML = contentHtml;
+                resultsContainer.appendChild(hookCard);
+            });
+            addEventListeners();
+        }
+        
+        function renderCalendar() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let html = `<div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold montserrat">${monthNames[month]} ${year}</h3></div><div class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-gray-600"><div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div></div><div class="grid grid-cols-7 gap-1 mt-1">`;
+            for (let i = 0; i < firstDay; i++) html += `<div class="border rounded-md h-24 bg-gray-50"></div>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const itemsOnDay = scheduledContent[dateStr] || [];
+                const hasItem = itemsOnDay.length > 0;
+                const isSelected = selectedCalendarDays.has(dateStr);
+                html += `<div data-date="${dateStr}" class="calendar-day border rounded-md h-24 p-1 text-left ${hasItem ? 'has-item' : ''} ${isSelected ? 'selected' : ''}"><div class="font-bold text-sm">${day}</div>${hasItem ? `<div class="text-xs mt-1 bg-blue-200 text-blue-800 rounded px-1 py-0.5">${itemsOnDay.length} item(s)</div>${itemsOnDay.some(i => i.hasBlog) ? '<div class="text-xs mt-1">📝 Blog Post</div>' : ''}` : ''}</div>`;
+            }
+            html += `</div>`;
+            calendarContainer.innerHTML = html;
+            addCalendarListeners();
+        }
+
+        function showModal(content) {
+            modalContent.innerHTML = content + '<button id="modal-close-btn" class="absolute top-4 right-4 text-2xl font-bold text-gray-500 hover:text-gray-800">&times;</button>';
+            modalOverlay.classList.remove('hidden');
+            document.getElementById('modal-close-btn').addEventListener('click', () => modalOverlay.classList.add('hidden'));
+        }
+        
+        // --- EVENT HANDLERS & LOGIC ---
+        async function processHooks(hooks) {
+            if (!hooks || hooks.length === 0) return;
+            
+            if (!apiKey || apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
+                apiKeyWarning.classList.remove('hidden');
+                return;
+            }
+            apiKeyWarning.classList.add('hidden');
+
+            loader.style.display = 'flex';
+            resultsContainer.innerHTML = ''; 
+            
+            if (hooks.length > 1) {
+                const estimatedTime = Math.round(hooks.length * 2.5);
+                loaderText.textContent = `Processing ${hooks.length} hooks. Estimated time: ~${estimatedTime} seconds.`;
+            } else {
+                 loaderText.textContent = 'Generating insights with the Salt Creative voice...';
+            }
+
+            const promises = hooks.map(hook => generateInsightsForHook(hook));
+            const results = await Promise.all(promises);
+            
+            loader.style.display = 'none';
+            loaderText.textContent = 'Generating insights with the Salt Creative voice...';
+            
+            const newContent = [];
+            hooks.forEach((hook, index) => {
+                const result = results[index];
+                if (result.success) {
+                    newContent.push({ id: `item-${Date.now()}-${Math.random()}`, hook, variations: result.data, approvedVariation: null, rating: null, isScheduled: false, hasBlog: false });
+                } else {
+                    newContent.push({ id: `item-${Date.now()}-${Math.random()}`, hook, variations: [], error: result.error });
+                }
+            });
+            generatedContent = [...newContent, ...generatedContent];
+            renderResults();
+        }
+
+        function handleFeedback(itemIndex, varIndex, isGood) {
+            const item = generatedContent[itemIndex];
+            const rating = isGood ? 'good' : 'bad';
+            if (item.approvedVariation === varIndex && item.rating === rating) {
+                item.approvedVariation = null;
+                item.rating = null;
+            } else {
+                item.approvedVariation = varIndex;
+                item.rating = rating;
+                if (isGood) {
+                    const approved = { ...item.variations[varIndex], hook: item.hook };
+                    if (!trainingData.some(d => d.hook === approved.hook)) {
+                        trainingData.push(approved);
+                        console.log("New training data added:", approved);
+                    }
+                }
+            }
+            renderResults();
+        }
+
+        async function handleAction(action, itemIndex) {
+            const item = generatedContent[itemIndex];
+            if (action === 'calendar') {
+                const dateStr = prompt("Enter date to schedule (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+                if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    if (!scheduledContent[dateStr]) scheduledContent[dateStr] = [];
+                    const newItemForSchedule = JSON.parse(JSON.stringify(item));
+                    scheduledContent[dateStr].push(newItemForSchedule);
+                    item.isScheduled = true;
+                    renderCalendar();
+                    renderResults();
+                } else if (dateStr) {
+                    alert("Invalid date format. Please use YYYY-MM-DD.");
+                }
+            }
+        }
+        
+        async function showCalendarItemModal(dateStr) {
+            const itemsOnDay = scheduledContent[dateStr];
+            if (!itemsOnDay || itemsOnDay.length === 0) return;
+            let modalHtml = `<h3 class="text-xl font-bold montserrat text-brand-blue mb-4">Campaign for ${dateStr}</h3>`;
+            for (let i = 0; i < itemsOnDay.length; i++) {
+                const item = itemsOnDay[i];
+                modalHtml += `<div class="border-t pt-4 mt-4"><p class="font-bold">${item.hook}</p><div id="campaign-content-${i}" class="mt-2 space-y-3"><button data-action="captions" data-item-index="${i}" data-date="${dateStr}" class="campaign-action-btn btn text-xs bg-blue-100 text-blue-800 py-1 px-2 rounded">View Captions</button><button data-action="blog" data-item-index="${i}" data-date="${dateStr}" class="campaign-action-btn btn text-xs bg-purple-100 text-purple-800 py-1 px-2 rounded" ${item.hasBlog ? 'disabled' : ''}>${item.hasBlog ? '📝 Blog Approved' : 'Generate Blog Post'}</button></div><div id="dynamic-content-area-${i}" class="mt-4"></div></div>`;
+            }
+            showModal(modalHtml);
+            document.querySelectorAll('.campaign-action-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    const { action, itemIndex, date } = e.currentTarget.dataset;
+                    const item = scheduledContent[date][itemIndex];
+                    const contentArea = document.getElementById(`dynamic-content-area-${itemIndex}`);
+                    if (action === 'captions') {
+                        contentArea.innerHTML = await generateCaptions(item);
+                    } else if (action === 'blog') {
+                        const blogHtml = await generateBlogPost(item);
+                        contentArea.innerHTML = blogHtml + `<button id="approve-blog-btn" class="btn mt-3 bg-green-600 text-white py-1 px-3 rounded">Approve Blog</button>`;
+                        document.getElementById('approve-blog-btn').onclick = () => {
+                            item.hasBlog = true;
+                            e.currentTarget.disabled = true;
+                            e.currentTarget.innerHTML = '📝 Blog Approved';
+                            contentArea.innerHTML = '<p class="text-green-600 font-bold">Blog post approved and saved!</p>';
+                            renderCalendar();
+                        };
+                    }
+                };
+            });
+        }
+
+        async function handleGenerateNewsletter() {
+            const itemsToInclude = [];
+            selectedCalendarDays.forEach(dateStr => {
+                itemsToInclude.push(...(scheduledContent[dateStr] || []));
+            });
+            if (itemsToInclude.length > 0) {
+                const content = await generateNewsletter(itemsToInclude);
+                showModal(content);
+            }
+        }
+
+        function addEventListeners() {
+            document.querySelectorAll('.feedback-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const { itemIndex, varIndex } = e.currentTarget.dataset;
+                    handleFeedback(parseInt(itemIndex), parseInt(varIndex), e.currentTarget.classList.contains('good-btn'));
+                };
+            });
+            document.querySelectorAll('.action-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    const { action, itemIndex } = e.currentTarget.dataset;
+                    handleAction(action, parseInt(itemIndex));
+                };
+            });
+        }
+        
+        function addCalendarListeners() {
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.addEventListener('click', (e) => {
+                    const dateStr = e.currentTarget.dataset.date;
+                    if (scheduledContent[dateStr]) {
+                        showCalendarItemModal(dateStr);
+                    }
+                });
+            });
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            trainingData = [...initialTrainingData];
+            generateSingleBtn.addEventListener('click', () => {
+                const hook = hookInput.value.trim();
+                if (hook) processHooks([hook]);
+                hookInput.value = '';
+            });
+
+            const csvLabel = document.querySelector('label[for="csv-upload"]');
+            csvLabel.parentElement.addEventListener('click', () => csvUpload.click());
+            csvUpload.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    Papa.parse(file, { 
+                        complete: (res) => {
+                            const hooks = res.data.map(row => row[0]).filter(Boolean);
+                            processHooks(hooks);
+                        } 
+                    });
+                }
+            });
+
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) modalOverlay.classList.add('hidden');
+            });
+            generateNewsletterBtn.addEventListener('click', handleGenerateNewsletter);
+            renderResults();
+            renderCalendar();
+            
+            if (!apiKey || apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
+                apiKeyWarning.classList.remove('hidden');
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
