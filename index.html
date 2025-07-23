@@ -203,7 +203,7 @@
                 return { success: false, error: "API Key is missing. Please add your key to the script to enable live AI generation." };
             }
             
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
             
             let prompt = `You are an expert content strategist and theologian for Salt Creative, a brand that equips pastors by offering a streamlined platform for sermon prep, research, graphics, and outreach. Your primary goal is to generate content that resonates with pastors' real-world pain points and subtly points them toward the holistic solution Salt Creative provides. You will be given a "hook." Your task is to generate 3 distinct, high-quality "deep dive" insights that follow a strict five-part structure.
 
