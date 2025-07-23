@@ -540,7 +540,6 @@ Hook: "${hook}"`;
                 hookInput.value = '';
             });
 
-            const csvLabel = document.querySelector('label[for="csv-upload"]');
             // Rely on the label's built-in behavior to trigger the file input.
             csvUpload.addEventListener('change', (e) => {
                 const file = e.target.files[0];
