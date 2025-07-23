@@ -541,15 +541,26 @@ Hook: "${hook}"`;
             });
 
             const csvLabel = document.querySelector('label[for="csv-upload"]');
-            csvLabel.parentElement.addEventListener('click', () => csvUpload.click());
+            csvLabel.parentElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                csvUpload.click();
+            });
             csvUpload.addEventListener('change', (e) => {
                 const file = e.target.files[0];
-                if(file) {
-                    Papa.parse(file, { 
+                if (file) {
+                    Papa.parse(file, {
+                        skipEmptyLines: true,
                         complete: (res) => {
                             const hooks = res.data.map(row => row[0]).filter(Boolean);
+                            if (hooks.length === 0) {
+                                alert('No hooks found. Ensure the CSV has a single column with no header.');
+                                return;
+                            }
                             processHooks(hooks);
-                        } 
+                        },
+                        error: (err) => {
+                            alert('CSV parse error: ' + err.message);
+                        }
                     });
                 }
             });
