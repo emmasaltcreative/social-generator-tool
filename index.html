@@ -549,11 +549,14 @@ Hook: "${hook}"`;
                 const file = e.target.files[0];
                 if (file) {
                     Papa.parse(file, {
+                        header: false,
                         skipEmptyLines: true,
                         complete: (res) => {
-                            const hooks = res.data.map(row => row[0]).filter(Boolean);
+                            const hooks = res.data
+                                .map(row => row[0].trim())
+                                .filter(v => v && v.toLowerCase() !== 'hook');
                             if (hooks.length === 0) {
-                                alert('No hooks found. Ensure the CSV has a single column with no header.');
+                                alert('No hooks found. Ensure the CSV uses a single column. Other formats are unsupported.');
                                 return;
                             }
                             processHooks(hooks);
