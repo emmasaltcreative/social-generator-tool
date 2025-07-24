@@ -552,6 +552,17 @@ Hook: "${hook}"`;
                         header: false,
                         skipEmptyLines: true,
                         complete: (res) => {
+                            if (res.errors && res.errors.length) {
+                                console.error('PapaParse errors:', res.errors);
+                                const delimErr = res.errors.find(err => err.code === 'UndetectableDelimiter');
+                                if (delimErr) {
+                                    alert('Unable to detect any text data. Ensure the CSV is comma-separated and encoded in UTF-8.');
+                                    return;
+                                }
+                                alert('CSV parse error: ' + res.errors[0].message);
+                                return;
+                            }
+
                             const hooks = res.data
                                 .map(row => row[0].trim())
                                 .filter(v => v && v.toLowerCase() !== 'hook');
